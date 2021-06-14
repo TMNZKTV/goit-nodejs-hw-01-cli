@@ -3,12 +3,18 @@ const path = require("path");
 
 const contactsPath = path.resolve("./db/contacts.json");
 
+const list = async () => {
+  try {
+    const data = JSON.parse(await fs.readFile(contactsPath, "utf-8"));
+    return data;
+  } catch (err) {
+    console.error(err.message);
+  }
+};
+
 async function listContacts() {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    const parsedContacts = JSON.parse(data);
-    console.table(parsedContacts);
-    return parsedContacts;
+    console.table(await list());
   } catch (error) {
     console.log(error.message);
   }
@@ -16,12 +22,10 @@ async function listContacts() {
 
 async function getContactById(contactId) {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    const parsedContacts = JSON.parse(data);
+    const contacts = await list();
 
-    const contact = parsedContacts.find(
-      ({ id }) => id.toString() === contactId
-    );
+    const contact = contacts.find(({ id }) => id === Number(contactId));
+
     console.table(contact);
     return contact;
   } catch (error) {
@@ -31,14 +35,15 @@ async function getContactById(contactId) {
 
 async function removeContact(contactId) {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    const parsedContacts = JSON.parse(data).filter(
-      ({ id }) => id.toString() !== contactId
+    const contacts = await list();
+
+    const filteredContacts = contacts.filter(
+      (contact) => contact.id !== Number(contactId)
     );
 
-    const newContacts = await fs.writeFile(
+    const newContacts = fs.writeFile(
       contactsPath,
-      JSON.stringify(parsedContacts)
+      JSON.stringify(filteredContacts)
     );
 
     listContacts();
@@ -50,21 +55,21 @@ async function removeContact(contactId) {
 
 async function addContact(name, email, phone) {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    const parsedContacts = JSON.parse(data);
+    const contacts = await list();
 
+    // Правильная последовательность id работает только в случае с правильным порядком элементов
     const newContact = {
-      id: parsedContacts.length + 1,
+      id: contacts.length + 1,
       name,
       email,
       phone,
     };
 
-    parsedContacts.push(newContact);
+    contacts.push(newContact);
 
     const newContacts = await fs.writeFile(
       contactsPath,
-      JSON.stringify(parsedContacts)
+      JSON.stringify(contacts)
     );
     listContacts();
     return newContacts;
